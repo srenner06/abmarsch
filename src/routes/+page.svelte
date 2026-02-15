@@ -8,6 +8,7 @@
   import DateInput from '$lib/components/DateInput.svelte'
   import StatusCard from '$lib/components/StatusCard.svelte'
   import Seo from '$lib/components/Seo.svelte'
+  import { fade } from 'svelte/transition'
 
   let dates = getDates()
 
@@ -46,10 +47,16 @@
     }, 10)
   }, duration + delay)
 
-  const handleEasterEgg = () => {
+  const handleProgressEasterEgg = () => {
     if (round < 5) round = 5
     else round = 0
   }
+
+  let showPreciseProgress = $state(false)
+  let remainingMs = $derived(dates.endDate.getTime() - now.getTime())
+  let remainingSeconds = $derived(remainingMs / 1000)
+  let remainingMinutes = $derived(remainingSeconds / 60)
+  let remainingHours = $derived(remainingMinutes / 60)
 </script>
 
 <Seo
@@ -85,7 +92,7 @@
         })}
       />
     </div>
-    <button class="progress" onclick={handleEasterEgg} aria-label="Progress details">
+    <button class="progress" onclick={handleProgressEasterEgg} aria-label="Progress details">
       <StatusCard
         title={$t('home.progress')}
         value={Math.max(0, percentage)}
@@ -98,7 +105,11 @@
         {duration}
       />
     </button>
-    <div class="days-passed">
+    <button
+      class="days-passed"
+      aria-label="More details about days passed"
+      onclick={() => (showPreciseProgress = !showPreciseProgress)}
+    >
       <StatusCard
         title={dates.daysPassed >= 0 ? $t('home.already-done') : $t('home.until-start')}
         value={Math.abs(Math.min(dates.daysTotal, dates.daysPassed))}
@@ -106,7 +117,7 @@
         delay={1600}
         text={$t('home.already-done-text')}
       />
-    </div>
+    </button>
 
     <div class="total-days">
       <StatusCard
@@ -122,6 +133,23 @@
         delay={2400}
       />
     </div>
+    {#if showPreciseProgress}
+      <div class="card precise-progress" transition:fade>
+        <h2>{$t('home.precise-progress.title')}</h2>
+        <div class="group">
+          <span>{Math.floor(remainingHours)} </span>
+          <span class="unit">{$t('home.precise-progress.hours')}</span>
+        </div>
+        <div class="group">
+          <span>{Math.floor(remainingMinutes)} </span>
+          <span class="unit">{$t('home.precise-progress.minutes')}</span>
+        </div>
+        <div class="group">
+          <span>{Math.floor(remainingSeconds)} </span>
+          <span class="unit">{$t('home.precise-progress.seconds')}</span>
+        </div>
+      </div>
+    {/if}
     <div class="card soon-weekend">
       <h2>{$t('home.soon-weekend')}</h2>
       <span class="week-day-list">
@@ -166,6 +194,7 @@
 </main>
 
 <style>
+  button.days-passed,
   button.progress {
     all: unset;
     cursor: pointer;
@@ -239,6 +268,26 @@
 
   .kpi-grid .total-days {
     grid-column: 3 / 4;
+  }
+
+  .kpi-grid .precise-progress {
+    grid-column: 1 / 4;
+
+    & .group {
+      display: flex;
+      flex-direction: column;
+      align-items: baseline;
+      gap: 0.25ch;
+      font-size: var(--text-xl);
+      color: var(--c-accent);
+      line-height: var(--space-xl);
+      margin-top: var(--space-xl);
+
+      & .unit {
+        font-size: var(--text-s);
+        color: var(--c-body);
+      }
+    }
   }
 
   .kpi-grid .soon-weekend {
